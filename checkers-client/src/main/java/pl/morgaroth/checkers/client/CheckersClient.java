@@ -1,16 +1,15 @@
 package pl.morgaroth.checkers.client;
 
+import org.apache.log4j.Logger;
 import pl.morgaroth.checkers.api.Agora;
 import pl.morgaroth.checkers.api.GameListener;
 import pl.morgaroth.checkers.api.UserToken;
-import org.apache.log4j.Logger;
 import pl.morgaroth.checkers.api.exceptions.InvalidUserException;
 
 import java.rmi.Naming;
 import java.rmi.server.UnicastRemoteObject;
 
 import static java.lang.String.format;
-import static java.lang.Thread.sleep;
 
 
 public class CheckersClient {
@@ -53,7 +52,7 @@ public class CheckersClient {
                 } else if (args[4].toLowerCase().equals("join")) {
                     agora.joinGame(token, listener, args[5]);
                 } else if (args[4].toLowerCase().equals("auto")) {
-                    agora.newGameWithBot(token,listener);
+                    agora.newGameWithBot(token, listener);
                 } else {
                     logger.error("only join or start");
                     iddleThread.interruptMe();

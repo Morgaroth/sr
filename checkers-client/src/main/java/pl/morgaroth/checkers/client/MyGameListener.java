@@ -1,6 +1,9 @@
 package pl.morgaroth.checkers.client;
 
-import pl.morgaroth.checkers.api.*;
+import pl.morgaroth.checkers.api.Board;
+import pl.morgaroth.checkers.api.Game;
+import pl.morgaroth.checkers.api.GameListener;
+import pl.morgaroth.checkers.api.UserToken;
 import pl.morgaroth.checkers.api.exceptions.CheckNotExistsException;
 import pl.morgaroth.checkers.api.exceptions.GameException;
 import pl.morgaroth.checkers.api.exceptions.MoveNotPossiblyException;
@@ -10,9 +13,6 @@ import pl.morgaroth.checkers.api.move.Move;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.MalformedURLException;
-import java.rmi.Naming;
-import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 
 import static java.lang.String.format;
@@ -26,39 +26,6 @@ public class MyGameListener implements GameListener {
     public MyGameListener(UserToken userToken, CheckersClient.IddleThread iddle) {
         this.userToken = userToken;
         this.iddle = iddle;
-    }
-
-    class MoveListener implements Runnable {
-        @Override
-        public void run() {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-            try {
-                boolean ok = false;
-                while (!ok) {
-
-                    System.out.print("Type your move:\n\tchecknumber: ");
-                    System.out.flush();
-                    int number = Integer.parseInt(reader.readLine());
-                    System.out.print("direct 1-left, 2-right: ");
-                    System.out.flush();
-                    int dir = Integer.parseInt(reader.readLine());
-                    Move move = new Move(number, dir == 1 ? Direct.Left : Direct.Right);
-                    try {
-                        game.doMove(userToken, move);
-                        ok = true;
-                    } catch (MoveNotPossiblyException e) {
-                        System.out.println("Move not possibly, try again");
-                    } catch (CheckNotExistsException e) {
-                        System.out.println("Check not exists, try again");
-                    } catch (GameException e) {
-                        e.printStackTrace();
-                        ok = true;
-                    }
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
     }
 
     @Override
@@ -114,5 +81,38 @@ public class MyGameListener implements GameListener {
     @Override
     public String getInfo() throws RemoteException {
         return "listener of " + userToken.getUserName();
+    }
+
+    class MoveListener implements Runnable {
+        @Override
+        public void run() {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+            try {
+                boolean ok = false;
+                while (!ok) {
+
+                    System.out.print("Type your move:\n\tchecknumber: ");
+                    System.out.flush();
+                    int number = Integer.parseInt(reader.readLine());
+                    System.out.print("direct 1-left, 2-right: ");
+                    System.out.flush();
+                    int dir = Integer.parseInt(reader.readLine());
+                    Move move = new Move(number, dir == 1 ? Direct.Left : Direct.Right);
+                    try {
+                        game.doMove(userToken, move);
+                        ok = true;
+                    } catch (MoveNotPossiblyException e) {
+                        System.out.println("Move not possibly, try again");
+                    } catch (CheckNotExistsException e) {
+                        System.out.println("Check not exists, try again");
+                    } catch (GameException e) {
+                        e.printStackTrace();
+                        ok = true;
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

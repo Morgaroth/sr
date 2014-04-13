@@ -2,8 +2,8 @@ package pl.morgaroth.checkers.server.core;
 
 import pl.morgaroth.checkers.api.*;
 import pl.morgaroth.checkers.api.exceptions.GameException;
-import pl.morgaroth.checkers.api.move.Direct;
 import pl.morgaroth.checkers.api.exceptions.InvalidUserException;
+import pl.morgaroth.checkers.api.move.Direct;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.rmi.RemoteException;

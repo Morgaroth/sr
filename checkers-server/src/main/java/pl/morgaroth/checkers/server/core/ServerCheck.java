@@ -1,10 +1,13 @@
 package pl.morgaroth.checkers.server.core;
 
-import pl.morgaroth.checkers.api.Check;
-
 public class ServerCheck {
     private final String owner;
     private final int number;
+
+    public ServerCheck(String owner, int number) {
+        this.owner = owner;
+        this.number = number;
+    }
 
     @Override
     public String toString() {
@@ -12,11 +15,6 @@ public class ServerCheck {
                 "owner='" + owner + '\'' +
                 ", number=" + number +
                 '}';
-    }
-
-    public ServerCheck(String owner, int number) {
-        this.owner = owner;
-        this.number = number;
     }
 
     @Override

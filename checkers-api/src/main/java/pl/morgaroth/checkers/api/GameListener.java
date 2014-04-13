@@ -1,7 +1,5 @@
 package pl.morgaroth.checkers.api;
 
-import pl.morgaroth.checkers.api.move.Move;
-
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 
