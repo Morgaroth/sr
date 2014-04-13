@@ -20,7 +20,7 @@ public class CheckersServer {
     public static void main(String[] args) {
 
         if (args.length < 2) {
-            System.out.println("2 arguments required:\nRMI_HOSTNAME RMI_PORT");
+            System.out.println("arguments required:\nRMI_IP RMI_PORT");
             return;
         }
         System.setProperty("java.rmi.server.hostname", args[0]);
