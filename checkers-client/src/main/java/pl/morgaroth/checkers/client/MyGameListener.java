@@ -59,7 +59,6 @@ public class MyGameListener implements GameListener {
 
     @Override
     public void doMove(Board board) throws RemoteException {
-
         printBoard(board);
         startResponse();
     }

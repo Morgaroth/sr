@@ -13,12 +13,15 @@ public class CheckersServer {
 
     private static final Logger logger = Logger.getLogger(CheckersServer.class);
 
-    private static final String RMI_REGISTRY_ADDRESS = "rmi://127.0.0.1:1099";
+    private static String RMI_REGISTRY_ADDRESS = "rmi://127.0.0.1:1099";
     private static final String GAME_REMOTE_OBJECT_NAME = "checkers";
 
     public static void main(String[] args) {
 
         try {
+            if (args.length > 0) {
+                RMI_REGISTRY_ADDRESS = args[0];
+            }
             AgoraImpl impl = new AgoraImpl();
             Agora agora = (Agora) UnicastRemoteObject.exportObject(impl, 0);
             Registry createRegistry = LocateRegistry.createRegistry(1099);
