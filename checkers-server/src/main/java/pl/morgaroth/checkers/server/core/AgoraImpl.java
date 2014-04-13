@@ -68,6 +68,13 @@ public class AgoraImpl implements Agora {
     }
 
     @Override
+    public void newGameWithBot(UserToken token, GameListener listener) throws RemoteException, GameException {
+        GameImpl gameImpl = GameImpl.newBoardWithBot(token.getUserName(), listener);
+        Game game = (Game) UnicastRemoteObject.exportObject(gameImpl, 0);
+        gameImpl.startGame(game);
+    }
+
+    @Override
     public Collection<String> usersWaitingForMe(UserToken token) throws RemoteException, GameException {
         Map<String, GameListener> pending = pendingGames.get(token.getUserName());
         return (pending == null) ? Collections.<String>emptyList() : pending.keySet();
@@ -90,5 +97,4 @@ public class AgoraImpl implements Agora {
     public void move(Check check, Direct direct) throws RemoteException, GameException {
         throw new NotImplementedException();
     }
-
 }

@@ -5,27 +5,36 @@ import pl.morgaroth.checkers.api.exceptions.CheckNotExistsException;
 import pl.morgaroth.checkers.api.exceptions.GameException;
 import pl.morgaroth.checkers.api.exceptions.MoveNotPossiblyException;
 import pl.morgaroth.checkers.api.exceptions.NotYourMoveException;
+import pl.morgaroth.checkers.api.move.Direct;
 import pl.morgaroth.checkers.api.move.Move;
 import pl.morgaroth.checkers.server.BoardImpl;
 
 import java.rmi.RemoteException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class GameImpl implements Game {
 
-    private final Player player;
-    private final Player player1;
+    private Player player = null;
+    private Player player1 = null;
     private ServerCheck[][] checks;
     private Map<ServerCheck, Position> checkersPositions;
     private Player active, notActive;
+    private boolean bot = false;
 
-    private GameImpl(Player player, Player player1) {
-        this.player = player;
-        this.player1 = player1;
+    private GameImpl() {
         checks = new ServerCheck[8][8];
         checkersPositions = new HashMap<ServerCheck, Position>(16);
+    }
+
+    private GameImpl(Player player, Player player1) {
+        this();
+        this.player = player;
+        this.player1 = player1;
+    }
+
+    private GameImpl(Player player) {
+        this(player, new Player("auto", null));
+        bot = true;
     }
 
     public static GameImpl newBoard(String nick1, String nick2, GameListener nick1Listener, GameListener nick2Listener) {
@@ -34,17 +43,32 @@ public class GameImpl implements Game {
         return board;
     }
 
+    public static GameImpl newBoardWithBot(String nick, GameListener nickListener) {
+        GameImpl board = new GameImpl(new Player(nick, nickListener));
+        board.insertChecks();
+        return board;
+    }
+
+
     private void insertChecks() {
-        for (int i = 0; i < 8; ++i) {
-            int row = 6 + (i / 4);
-            int column = (i % 4) * 2 + i / 4;
-            checks[row][column] = new ServerCheck(player.nick, i);
-            checkersPositions.put(checks[row][column], new Position(row, column));
-        }
+        insertChecksUp();
+        insertChecksDown();
+    }
+
+    private void insertChecksUp() {
         for (int i = 0; i < 8; ++i) {
             int row = 1 - (i / 4);
             int column = 7 - (i % 4) * 2 - i / 4;
             checks[row][column] = new ServerCheck(player1.nick, i);
+            checkersPositions.put(checks[row][column], new Position(row, column));
+        }
+    }
+
+    private void insertChecksDown() {
+        for (int i = 0; i < 8; ++i) {
+            int row = 6 + (i / 4);
+            int column = (i % 4) * 2 + i / 4;
+            checks[row][column] = new ServerCheck(player.nick, i);
             checkersPositions.put(checks[row][column], new Position(row, column));
         }
     }
@@ -76,40 +100,42 @@ public class GameImpl implements Game {
         active = player;
         notActive = player1;
         try {
-            notActive.listener.startGame(GAME_REMOTE_OBJECT_NAME);
-        } catch (RemoteException e) {
-            e.printStackTrace();
+            if (!bot) {
+                notActive.listener.startGame(GAME_REMOTE_OBJECT_NAME);
+            }
+            active.listener.startGame(GAME_REMOTE_OBJECT_NAME);
+        } catch (RemoteException e1) {
+            e1.printStackTrace();
+
             try {
                 active.listener.error("remote exception from oponent " + notActive.nick);
-            } catch (RemoteException e1) {
-                e1.printStackTrace();
+            } catch (RemoteException e) {
+                e.printStackTrace();
             }
-            return;
-        }
-        try {
-            active.listener.startGame(GAME_REMOTE_OBJECT_NAME);
-        } catch (RemoteException e) {
-            e.printStackTrace();
             try {
-                notActive.listener.error("oponent exception oponent " + active.nick);
-            } catch (RemoteException e1) {
-                e1.printStackTrace();
+                if (!bot) {
+                    notActive.listener.error("oponent exception oponent " + active.nick);
+                }
+            } catch (RemoteException e) {
+                e.printStackTrace();
             }
         }
         notifyPlayers();
     }
 
     void notifyPlayers() {
-        try {
-            notActive.listener.updateBoard(getBoardViewForUser(notActive.nick));
-        } catch (RemoteException e) {
-            e.printStackTrace();
+        if (!bot) {
             try {
-                active.listener.error("remote exception from oponent " + notActive.nick);
-            } catch (RemoteException e1) {
-                e1.printStackTrace();
+                notActive.listener.updateBoard(getBoardViewForUser(notActive.nick));
+            } catch (RemoteException e) {
+                e.printStackTrace();
+                try {
+                    active.listener.error("remote exception from oponent " + notActive.nick);
+                } catch (RemoteException e1) {
+                    e1.printStackTrace();
+                }
+                // TODO jak zakonczyc?
             }
-            // TODO jak zakonczyc?
         }
         try {
             active.listener.doMove(getBoardViewForUser(active.nick));
@@ -131,16 +157,41 @@ public class GameImpl implements Game {
 
     @Override
     public void doMove(UserToken user, Move move) throws RemoteException, GameException {
+        if (!user.getUserName().equals(active.nick)) {
+            throw new NotYourMoveException();
+        }
         ServerCheck checkToMove = new ServerCheck(user.getUserName(), move.number);
         if (!checkersPositions.containsKey(checkToMove)) {
             throw new CheckNotExistsException();
         }
-        if (!user.getUserName().equals(active.nick)) {
-            throw new NotYourMoveException();
-        }
+
         executeMove(checkToMove, move);
-        switchPlayers();
+        if (bot) {
+            executeBotMove();
+        } else {
+            switchPlayers();
+        }
         notifyPlayers();
+    }
+
+    private void executeBotMove() {
+        List<Integer> integers = Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7);
+        Collections.shuffle(integers);
+        for (int i : integers) {
+            ServerCheck check = new ServerCheck(player1.nick, i);
+            if (checkersPositions.containsKey(check)) {
+                try {
+                    executeMove(check, new Move(i, Direct.Left));
+                    return;
+                } catch (MoveNotPossiblyException ignored) {
+                }
+                try {
+                    executeMove(check, new Move(i, Direct.Right));
+                    return;
+                } catch (MoveNotPossiblyException ignored) {
+                }
+            }
+        }
     }
 
     private void executeMove(ServerCheck check, Move move) throws MoveNotPossiblyException {
@@ -180,22 +231,34 @@ public class GameImpl implements Game {
                 moveCheck(check, out);
             }
         }
-        if (checkersPositions.size() == 1) {
+        if (endOfGame()) {
             fireEndOfGame();
         }
     }
 
+    private boolean endOfGame() {
+        boolean firstHas = false;
+        boolean secondhas = false;
+        Iterator<ServerCheck> iterator = checkersPositions.keySet().iterator();
+        while (iterator.hasNext() && !(firstHas && secondhas)) {
+            ServerCheck next = iterator.next();
+            firstHas = next.getOwner().equals(player.nick) || firstHas;
+            secondhas = next.getOwner().equals(player1.nick) || secondhas;
+        }
+        return (firstHas && (!secondhas)) || ((!firstHas) && secondhas);
+    }
+
     private void fireEndOfGame() {
-        Set<ServerCheck> checkers = checkersPositions.keySet();
-        assert checkers.size() == 1 : "fire end but more checks";
-        ServerCheck next = checkers.iterator().next();
+        ServerCheck check = checkersPositions.keySet().iterator().next();
+        Player winner = check.getOwner().equals(player.nick) ? player : player1;
+        Player lost = check.getOwner().equals(player.nick) ? player1 : player;
+
         try {
-            if (next.getOwner().equals(player.nick)) {
-                player.listener.winner();
-                player1.listener.gameOver();
-            } else {
-                player1.listener.winner();
-                player.listener.gameOver();
+            if (winner.listener != null) {
+                winner.listener.winner();
+            }
+            if (lost.listener != null) {
+                lost.listener.gameOver();
             }
         } catch (RemoteException e) {
             e.printStackTrace();

@@ -21,8 +21,12 @@ public class CheckersClient {
 
     public static void main(String[] args) {
 
-        if (args.length < 6) {
-            System.out.println("6 arguments required:\nRMI_HOSTNAME RMI_PORT CLIENT_HOSTNAME You START|JOIN Oponent");
+        if (args.length < 5) {
+            System.out.println("arguments required:\nRMI_HOSTNAME RMI_PORT CLIENT_HOSTNAME You [START|JOIN Oponent] or AUTO");
+            return;
+        }
+        if (!args[4].toLowerCase().equals("auto") && args.length < 6) {
+            System.out.println("arguments required:\nRMI_HOSTNAME RMI_PORT CLIENT_HOSTNAME You [START|JOIN Oponent] or AUTO");
             return;
         }
         System.setProperty("java.rmi.server.hostname", args[2]);
@@ -48,6 +52,8 @@ public class CheckersClient {
                     agora.newGame(token, args[5], listener);
                 } else if (args[4].toLowerCase().equals("join")) {
                     agora.joinGame(token, listener, args[5]);
+                } else if (args[4].toLowerCase().equals("auto")) {
+                    agora.newGameWithBot(token,listener);
                 } else {
                     logger.error("only join or start");
                     iddleThread.interruptMe();

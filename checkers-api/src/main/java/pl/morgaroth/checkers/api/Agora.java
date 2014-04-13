@@ -20,4 +20,7 @@ public interface Agora extends Remote {
     void joinGame(UserToken token, GameListener listener, String oponentNick) throws RemoteException, GameException;
 
     void move(Check check, Direct direct) throws RemoteException, GameException;
+
+    void newGameWithBot(UserToken token, GameListener listener) throws RemoteException, GameException;
+
 }
