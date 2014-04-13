@@ -19,4 +19,6 @@ public interface GameListener extends Remote {
     void winner() throws RemoteException;
 
     void gameOver() throws RemoteException;
+
+    String getInfo() throws RemoteException;
 }

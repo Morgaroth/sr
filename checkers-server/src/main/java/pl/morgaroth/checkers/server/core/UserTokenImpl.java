@@ -37,13 +37,11 @@ public class UserTokenImpl implements UserToken {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         UserTokenImpl userToken = (UserTokenImpl) o;
-        return id == userToken.id && userName.equals(userToken.userName);
+        return userName.equals(userToken.userName);
     }
 
     @Override
     public int hashCode() {
-        int result = userName.hashCode();
-        result = 31 * result + id;
-        return result;
+        return userName.hashCode();
     }
 }

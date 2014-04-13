@@ -1,7 +1,9 @@
 package pl.morgaroth.checkers.client;
 
 import pl.morgaroth.checkers.api.*;
+import pl.morgaroth.checkers.api.exceptions.CheckNotExistsException;
 import pl.morgaroth.checkers.api.exceptions.GameException;
+import pl.morgaroth.checkers.api.exceptions.MoveNotPossiblyException;
 import pl.morgaroth.checkers.api.move.Direct;
 import pl.morgaroth.checkers.api.move.Move;
 
@@ -20,12 +22,10 @@ public class MyGameListener implements GameListener {
     private Game game = null;
     private UserToken userToken;
     private CheckersClient.IddleThread iddle;
-    private String RMI_REGISTRY_ADDRESS;
 
-    public MyGameListener(UserToken userToken, CheckersClient.IddleThread iddle, String RMI_REGISTRY_ADDRESS) {
+    public MyGameListener(UserToken userToken, CheckersClient.IddleThread iddle) {
         this.userToken = userToken;
         this.iddle = iddle;
-        this.RMI_REGISTRY_ADDRESS = RMI_REGISTRY_ADDRESS;
     }
 
     class MoveListener implements Runnable {
@@ -33,17 +33,27 @@ public class MyGameListener implements GameListener {
         public void run() {
             BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
             try {
-                System.out.print("Type your move:\n\tchecknumber: ");
-                System.out.flush();
-                int number = Integer.parseInt(reader.readLine());
-                System.out.print("direct 1-left, 2-right: ");
-                System.out.flush();
-                int dir = Integer.parseInt(reader.readLine());
-                Move move = new Move(number, dir == 1 ? Direct.Left : Direct.Right);
-                try {
-                    game.doMove(userToken, move);
-                } catch (GameException e) {
-                    e.printStackTrace();
+                boolean ok = false;
+                while (!ok) {
+
+                    System.out.print("Type your move:\n\tchecknumber: ");
+                    System.out.flush();
+                    int number = Integer.parseInt(reader.readLine());
+                    System.out.print("direct 1-left, 2-right: ");
+                    System.out.flush();
+                    int dir = Integer.parseInt(reader.readLine());
+                    Move move = new Move(number, dir == 1 ? Direct.Left : Direct.Right);
+                    try {
+                        game.doMove(userToken, move);
+                        ok = true;
+                    } catch (MoveNotPossiblyException e) {
+                        System.out.println("Move not possibly, try again");
+                    } catch (CheckNotExistsException e) {
+                        System.out.println("Check not exists, try again");
+                    } catch (GameException e) {
+                        e.printStackTrace();
+                        ok = true;
+                    }
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -99,5 +109,10 @@ public class MyGameListener implements GameListener {
     public void gameOver() {
         System.out.println("GAME OVER");
         iddle.interruptMe();
+    }
+
+    @Override
+    public String getInfo() throws RemoteException {
+        return "listener of " + userToken.getUserName();
     }
 }

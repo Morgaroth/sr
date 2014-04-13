@@ -3,20 +3,18 @@ package pl.morgaroth.checkers.server.core;
 import pl.morgaroth.checkers.api.*;
 import pl.morgaroth.checkers.api.exceptions.GameException;
 import pl.morgaroth.checkers.api.move.Direct;
-import pl.morgaroth.checkers.server.exceptions.InvalidUserException;
+import pl.morgaroth.checkers.api.exceptions.InvalidUserException;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
-import java.net.MalformedURLException;
-import java.rmi.Naming;
 import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.*;
+import java.util.logging.Logger;
+
+import static java.lang.String.format;
 
 public class AgoraImpl implements Agora {
 
-    private static final String RMI_REGISTRY_ADDRESS = "rmI";
     private HashSet<UserToken> registeredUsers;
     private Map<String, Map<String, GameListener>> pendingGames;
 
@@ -29,6 +27,7 @@ public class AgoraImpl implements Agora {
 
     @Override
     public UserToken login(String nick) throws RemoteException, GameException {
+        Logger.getLogger(AgoraImpl.class.getName()).info(format("login %s", nick));
         UserTokenImpl newToken = new UserTokenImpl(nick, ++maxId);
         if (registeredUsers.contains(newToken)) {
             throw new InvalidUserException("user nick registered!");
@@ -54,6 +53,7 @@ public class AgoraImpl implements Agora {
 
     @Override
     public void newGame(UserToken token, String oponentNick, GameListener listener) throws RemoteException, GameException {
+        Logger.getLogger(AgoraImpl.class.getName()).info(format("new game from %s, to %s, listener %s", token.getUserName(), oponentNick, listener.getInfo()));
         if (registeredUsers.contains(token)) {
             if (pendingGames.get(token.getUserName()).containsKey(oponentNick)) {
                 throw new GameException("user is vaiting for game");

@@ -1,4 +1,4 @@
-package pl.morgaroth.checkers.server.exceptions;
+package pl.morgaroth.checkers.api.exceptions;
 
 import pl.morgaroth.checkers.api.exceptions.GameException;
 

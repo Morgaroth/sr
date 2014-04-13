@@ -4,10 +4,12 @@ import pl.morgaroth.checkers.api.Agora;
 import pl.morgaroth.checkers.api.GameListener;
 import pl.morgaroth.checkers.api.UserToken;
 import org.apache.log4j.Logger;
+import pl.morgaroth.checkers.api.exceptions.InvalidUserException;
 
 import java.rmi.Naming;
 import java.rmi.server.UnicastRemoteObject;
 
+import static java.lang.String.format;
 import static java.lang.Thread.sleep;
 
 
@@ -15,10 +17,16 @@ public class CheckersClient {
 
     private static final Logger logger = Logger.getLogger(CheckersClient.class);
 
-    public static final String RMI_REGISTRY_ADDRESS = "rmi://127.0.0.1:1099";
     private static final String GAME_REMOTE_OBJECT_NAME = "checkers";
 
     public static void main(String[] args) {
+
+        if (args.length < 6) {
+            System.out.println("6 arguments required:\nRMI_HOSTNAME RMI_PORT CLIENT_HOSTNAME You START|JOIN Oponent");
+            return;
+        }
+        System.setProperty("java.rmi.server.hostname", args[2]);
+        String RMI_REGISTRY_ADDRESS = format("rmi://%s:%s", args[0], args[1]);
 
         try {
 
@@ -31,17 +39,22 @@ public class CheckersClient {
 
             Agora agora = (Agora) Naming.lookup(RMI_REGISTRY_ADDRESS + "/" + GAME_REMOTE_OBJECT_NAME);
 
-            logger.debug("Mam referencje do obiektu zdalnego!");
+            try {
+                UserToken token = agora.login(args[3]);
+                MyGameListener listenerImpl = new MyGameListener(token, iddleThread);
+                GameListener listener = (GameListener) UnicastRemoteObject.exportObject(listenerImpl, 0);
 
-            UserToken token = agora.login(args[1]);
-
-            MyGameListener listenerImpl = new MyGameListener(token, iddleThread, RMI_REGISTRY_ADDRESS);
-            GameListener listener = (GameListener) UnicastRemoteObject.exportObject(listenerImpl, 0);
-
-            if (args[0].equals("1")) {
-                agora.newGame(token, args[2], listener);
-            } else {
-                agora.joinGame(token, listener, args[2]);
+                if (args[4].toLowerCase().equals("start")) {
+                    agora.newGame(token, args[5], listener);
+                } else if (args[4].toLowerCase().equals("join")) {
+                    agora.joinGame(token, listener, args[5]);
+                } else {
+                    logger.error("only join or start");
+                    iddleThread.interruptMe();
+                }
+            } catch (InvalidUserException e) {
+                logger.error(e.getMessage());
+                System.exit(-1);
             }
         } catch (Exception e) {
             logger.error(e);
@@ -56,6 +69,7 @@ public class CheckersClient {
 
         public void interruptMe() {
             synchronized (monitor) {
+                inter = false;
                 monitor.notifyAll();
             }
         }
